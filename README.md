@@ -74,7 +74,21 @@ all scenarios is given by 3.39 mmHg for SBP and 3.43 mmHg for DBP
 ---
 
 ---
+Please cite your work with 
 
+@article{
+      title={Generalizable deep learning for photoplethysmography-based blood pressure estimation -- A Benchmarking Study},
+      journal={arXiv preprint 2502.19167},
+      author={Mohammad Moulaeifard and Peter H. Charlton and Nils Strodthoff},
+      year={2025},
+      eprint={2502.19167},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+    }
+
+---
+
+---
 ## **📚 References**
 📌 **PulseDB Dataset**  
 Wang W, Mohseni P, Kilgore KL, Najafizadeh L. PulseDB: A large, cleaned dataset based on MIMIC-III and VitalDB for benchmarking cuff-less blood pressure estimation methods. *Frontiers in Digital Health*. 2023 Feb 8;4:1090854.  
