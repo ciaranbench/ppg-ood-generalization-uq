@@ -1,6 +1,9 @@
 # **Generalizable Deep Learning for Photoplethysmography-Based Blood Pressure Estimation – A Benchmarking Study**
 
-This is the official code repository for the paper "Generalizable Deep Learning for Photoplethysmography-Based Blood Pressure Estimation – A Benchmarking Study" by Mohammad Moulaeifard, Peter Charlton, and Nils Strodthoff.
+This is the official code repository for the paper 
+**["Generalizable Deep Learning for Photoplethysmography-Based Blood Pressure Estimation – A Benchmarking Study"](https://www.arxiv.org/abs/2502.19167)** 
+by **Mohammad Moulaeifard, Peter Charlton, and Nils Strodthoff**.
+
 
 ---
 
