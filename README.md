@@ -76,15 +76,16 @@ all scenarios is given by 3.39 mmHg for SBP and 3.43 mmHg for DBP
 ---
 Please cite your work with 
 
-@article{
-      title={Generalizable deep learning for photoplethysmography-based blood pressure estimation -- A Benchmarking Study},
-      journal={arXiv preprint 2502.19167},
-      author={Mohammad Moulaeifard and Peter H. Charlton and Nils Strodthoff},
-      year={2025},
-      eprint={2502.19167},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-    }
+@article{moulaeifard2025generalizable,
+  title={Generalizable Deep Learning for Photoplethysmography-Based Blood Pressure Estimation – A Benchmarking Study},
+  author={Mohammad Moulaeifard, Peter H. Charlton, and Nils Strodthoff},
+  journal={arXiv preprint},
+  year={2025},
+  eprint={2502.19167},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG}
+}
+
 
 ---
 
