@@ -89,7 +89,7 @@ Edit
   archivePrefix={arXiv},
   primaryClass={cs.LG}
 }
-Your citation helps support further research and development in this field. Thank you! 😊
+
 
 ---
 
