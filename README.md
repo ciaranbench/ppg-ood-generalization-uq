@@ -31,7 +31,7 @@ This project utilizes the **PulseDB dataset** (Wang et al., 2023) for **training
 This project also utilizes the **External dataset** (González et al., 2023) for **OOD evaluation**. To evaluate the generalization performance of AI models beyond PulseDB, we utilize an external dataset that provides an independent benchmark for non-invasive blood pressure estimation. This dataset allows us to test model robustness in Out-of-Distribution (OOD) scenarios and assess the impact of dataset shifts.
 
 📌 **To prepare the dataset for testing**, follow the instructions in the **External_dataset_Preprocessing** section of this repository:  
-🔗 [External Dataset Preprocessing](https://gitlab.uni-oldenburg.de/axba1153/ppg_ood_generalization/-/tree/main/External_dataset_preprocessing?ref_type=heads)
+🔗 [External Dataset Preprocessing](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/External_dataset_preprocessing)
 
 
 ---
