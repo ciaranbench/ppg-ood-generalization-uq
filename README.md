@@ -23,7 +23,7 @@ This repository contains scripts for training and evaluating AI models on **Puls
 This project utilizes the **PulseDB dataset** (Wang et al., 2023) for **training and ID/OOD evaluations**. We define different subsets based on the data source (**Vital, MIMIC, or Combined**) with different training scenarios such as **Calib, CalibFree, and AAMI-based subsets**.
 
 📌 **To generate the dataset**, follow the instructions in the **PulseDB_Preprocessing** section of this repository:  
-🔗 [PulseDB Preprocessing](https://gitlab.uni-oldenburg.de/axba1153/ppg_ood_generalization/-/tree/main/PulseDB_preprocessing?ref_type=heads)
+🔗 [PulseDB Preprocessing](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/PulseDB_preprocessing)
 
 ---
 
