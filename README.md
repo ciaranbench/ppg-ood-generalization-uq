@@ -54,7 +54,7 @@ Once preprocessing is complete, you can train different models using various **P
 To analyze the effect of **using weights in the training procedure**, compute the **weights for each training set**, adjusting them based on dataset similarities and distributional shifts to improve model robustness and adaptation across different domains.
 
 📌 **Use the code and instructions provided in the weighting section:**  
-🔗 [Weighting Code](https://gitlab.uni-oldenburg.de/axba1153/ppg_ood_generalization/-/tree/main/Processing/required_codes_files/weighting_codes?ref_type=heads)
+🔗 [Weighting Code](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/Processing/required_codes_files/weighting_codes)
 
 
 ---
