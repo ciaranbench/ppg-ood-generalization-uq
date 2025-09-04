@@ -46,7 +46,7 @@ This project also utilizes the **External dataset** (González et al., 2023) for
 Once preprocessing is complete, you can train different models using various **PulseDB datasets**., leveraging different training scenarios to optimize model performance. These scenarios include variations in calibration strategies and dataset splits to assess their impact on both in-distribution (ID) and out-of-distribution (OOD) generalization. 
 
 📌 **Follow the instructions in the Processing section of the repository:**  
-🔗 [Training Models](https://gitlab.uni-oldenburg.de/axba1153/ppg_ood_generalization/-/tree/main/Processing?ref_type=heads)
+🔗 [Training Models](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/Processing)
 
 ---
 
