@@ -48,6 +48,7 @@ Once preprocessing is complete, you can train different models using various **P
 
 📌 **Follow the instructions in the Processing section of the repository:**  
 🔗 [Training Models](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/Processing)
+
 ![PulseDB Dataset](images/fig2.png)
 ---
 
