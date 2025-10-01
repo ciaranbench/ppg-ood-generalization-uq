@@ -82,13 +82,10 @@ Please consider citing our paper:
 
 <pre>
 @article{moulaeifard2025generalizable,
-  title={Generalizable Deep Learning for Photoplethysmography-Based Blood Pressure Estimation – A Benchmarking Study},
-  author={Mohammad Moulaeifard, Peter H. Charlton, and Nils Strodthoff},
-  journal={arXiv preprint},
-  year={2025},
-  eprint={2502.19167},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG}
+  title={Generalizable deep learning for photoplethysmography-based blood pressure estimation--a benchmarking study},
+  author={Moulaeifard, Mohammad and Charlton, Peter H and Strodthoff, Nils},
+  journal={Machine Learning: Health},
+  year={2025}
 }
 </pre>
 
