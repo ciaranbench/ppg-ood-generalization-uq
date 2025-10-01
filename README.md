@@ -64,7 +64,7 @@ of PulsedDB dataset using XRes Net1d101 (SBP / DBP). Positive values (red) indic
 improvement through importance weighting across all scenarios is given by 0.43 mmHg for SBP and
 0.31 mmHg for DBP.
  
-![PulseDB Dataset](images/weighting_1.png)
+%![PulseDB Dataset](images/weighting_1.png)
 ---
 
 ---
@@ -73,7 +73,7 @@ improvement through importance weighting across all scenarios is given by 0.43 m
 indicate an improvement (decrease in MAE). The mean improvement through importance weighting across
 all scenarios is given by 3.39 mmHg for SBP and 3.43 mmHg for DBP
  
-![PulseDB Dataset](images/weighting_2.png)
+%![PulseDB Dataset](images/weighting_2.png)
 ---
 
 ---
