@@ -75,7 +75,7 @@ all scenarios is given by 3.39 mmHg for SBP and 3.43 mmHg for DBP
  
 %![PulseDB Dataset](images/weighting_2.png)
 ---
-
+%![PulseDB Dataset](images/final.png)
 ---
 📖 Citation
 Please consider citing our paper:
