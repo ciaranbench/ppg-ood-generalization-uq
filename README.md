@@ -38,8 +38,6 @@ This project also utilizes the **External dataset** (González et al., 2023) for
  Summary of the datasets utilized in this study: Two subsets PulseDB (Wang et al. 2023) for training and four external datasets (González et al., 2023) for OOD evaluation.
  
 ![PulseDB Dataset](images/pulseDB.png)
-
-![PulseDB Dataset](images/table2.png)
 ---
 
 
