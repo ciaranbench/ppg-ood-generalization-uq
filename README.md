@@ -56,24 +56,6 @@ To analyze the effect of **using weights in the training procedure**, compute th
 📌 **Use the code and instructions provided in the weighting section:**  
 🔗 [Weighting Code](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/Processing/required_codes_files/weighting_codes)
 
-
----
-Difference in MAE (weighted - unweighted) for ID and OOD generalization on all categories
-of PulsedDB dataset using XRes Net1d101 (SBP / DBP). Positive values (red) indicate a degradation
-(increase in MAE), while negative values (green) indicate an improvement (decrease in MAE). The mean
-improvement through importance weighting across all scenarios is given by 0.43 mmHg for SBP and
-0.31 mmHg for DBP.
- 
-%![PulseDB Dataset](images/weighting_1.png)
----
-
----
- Difference in MAE (Weighted - unweighted) for OOD generalization on external datasets
-(SBP / DBP). Positive values (red) indicate a degradation (increase in MAE), while negative values (green)
-indicate an improvement (decrease in MAE). The mean improvement through importance weighting across
-all scenarios is given by 3.39 mmHg for SBP and 3.43 mmHg for DBP
- 
-%![PulseDB Dataset](images/weighting_2.png)
 ---
 %![PulseDB Dataset](images/final.png)
 ---
