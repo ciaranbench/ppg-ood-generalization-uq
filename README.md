@@ -11,7 +11,7 @@ by **Mohammad Moulaeifard, Peter Charlton, and Nils Strodthoff**.
 This repository contains scripts for training and evaluating AI models on **PulseDB subsets**, while analyzing their generalization to both **PulseDB and external datasets**. The key objectives of this project include:
 
 1. **Preprocessing and converting PulseDB datasets** into machine-readable formats.
-2. **OOD (Out-of-Distribution) generalization analysis** by comparing model performance on **in-distribution (ID) vs. OOD datasets**.
+2. **OOD (Out-of-Distribution) generalization analysis** by comparing model performance on **ID (in-distribution) vs. OOD datasets**.
 3. **Statistical similarity measurement** between PulseDB subsets and external datasets.
 4. **Weight-based domain adaptation techniques** to improve model robustness.
 
