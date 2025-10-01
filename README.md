@@ -57,7 +57,7 @@ To analyze the effect of **using weights in the training procedure**, compute th
 🔗 [Weighting Code](https://github.com/AI4HealthUOL/ppg-ood-generalization/tree/main/Processing/required_codes_files/weighting_codes)
 
 ---
-%![PulseDB Dataset](images/final.png)
+![PulseDB Dataset](images/final.png)
 ---
 📖 Citation
 Please consider citing our paper:
