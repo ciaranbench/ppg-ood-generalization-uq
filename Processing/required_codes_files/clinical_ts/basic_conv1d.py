@@ -123,6 +123,7 @@ def weight_init(m):
         nn.init.normal_(m.w2,0.,stdv2)
 
 # Cell
+# modified for MCD
 def create_head1d(nf, nc, lin_ftrs=None, ps=0.5, bn:bool=True, act="relu", concat_pooling=True):
     "Model head that takes `nf` features, runs through `lin_ftrs`, and about `nc` classes; added bn and act here"
     lin_ftrs = [2*nf if concat_pooling else nf, nc] if lin_ftrs is None else [2*nf if concat_pooling else nf] + lin_ftrs + [nc] #was [nf, 512,nc]
@@ -132,6 +133,10 @@ def create_head1d(nf, nc, lin_ftrs=None, ps=0.5, bn:bool=True, act="relu", conca
     layers = [AdaptiveConcatPool1d() if concat_pooling else nn.AdaptiveAvgPool1d(1), Flatten()]
     for ni,no,p,actn in zip(lin_ftrs[:-1],lin_ftrs[1:],ps,actns):
         layers += bn_drop_lin(ni,no,bn,p,actn)
+    #enforce positivity
+    #layers.append(nn.Linear(lin_ftrs[-2], nc))
+    layers.append(nn.Softplus())
+    
     return nn.Sequential(*layers)
 
 # Cell

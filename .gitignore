@@ -1,0 +1,15 @@
+# Ignore version_X folders
+version_*/
+
+# Ignore .ckpt files
+*.ckpt
+
+# Ignore slurm output files
+slurm-*.out
+
+# Ignore machine.file.* files
+machine.file.*
+
+# Optional: Ignore Jupyter checkpoint directories
+.ipynb_checkpoints/
+*.pkl

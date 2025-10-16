@@ -177,8 +177,57 @@ class XResNet1d(nn.Sequential):
     def set_output_layer(self,x):
         self[-1][-1]=x
 
+
+
+# MCD
+
+class ResBlock_MCD(nn.Module):
+    "Resnet block from `ni` to `nh` with `stride`"
+    def __init__(self, expansion, ni, nf, stride=1, kernel_size=3, groups=1, nh1=None, nh2=None, dw=False, g2=1, dropout_prob = 0.05,
+                 norm_type=NormType.Batch, act_cls=nn.ReLU, pool=nn.AvgPool1d, pool_first=True, heads=4, mhsa=False, input_size=None, **kwargs):
+        super().__init__()
+        assert(mhsa is False or expansion>1)
+        norm2 = (NormType.BatchZero if norm_type==NormType.Batch else norm_type)
+        if nh2 is None: nh2 = nf
+        if nh1 is None: nh1 = nh2
+        nf,ni = nf*expansion,ni*expansion
+        k0 = dict(norm_type=norm_type, act_cls=act_cls, **kwargs)
+        k1 = dict(norm_type=norm2, act_cls=None, **kwargs)
+        if(expansion ==1):
+            layers  = [ConvLayer(ni,  nh2, kernel_size, stride=stride, groups=ni if dw else groups, **k0),nn.Dropout(dropout_prob),ConvLayer(nh2,  nf, kernel_size, groups=g2, **k1),nn.Dropout(dropout_prob)]
+        else:
+            layers = [ConvLayer(ni,  nh1, 1, **k0)]
+            if(mhsa==False):
+                layers.append(ConvLayer(nh1, nh2, kernel_size, stride=stride, groups=nh1 if dw else groups, **k0))
+            else:
+                assert(nh1==nh2)
+                layers.append(MHSA1d(nh1, length=int(input_size), heads=heads))
+                if stride == 2:
+                    layers.append(nn.AvgPool1d(2, 2))
+            layers.append(ConvLayer(nh2,  nf, 1, groups=g2, **k1))
+            layers.append(nn.Dropout(dropout_prob))
+         
+        self.convs = nn.Sequential(*layers)
+        convpath = [self.convs]
+        self.convpath = nn.Sequential(*convpath)
+        idpath = []
+        if ni!=nf: idpath.append(ConvLayer(ni, nf, 1, act_cls=None, **kwargs))
+        if stride!=1: idpath.insert((1,0)[pool_first], pool(2, ceil_mode=True))
+        self.idpath = nn.Sequential(*idpath)
+        self.act = nn.ReLU(inplace=True) if act_cls is nn.ReLU else act_cls()
+
+    def forward(self, x): 
+        return self.act(self.convpath(x) + self.idpath(x))
+
+
+
 def _xresnet1d(expansion, layers, **kwargs):
     return XResNet1d(ResBlock, expansion, layers, **kwargs)
+
+def _xresnet1d_MCD(expansion, layers, **kwargs):
+    return XResNet1d(ResBlock_MCD, expansion, layers, **kwargs)
+
+def xresnet1d50_MCD (dropout_prob=0.05,num_classes=4, **kwargs): return _xresnet1d_MCD(4, [3, 4,  6, 3], dropout_prob=dropout_prob, num_classes=num_classes, **kwargs)
 
 def xresnet1d18 (**kwargs): return _xresnet1d(1, [2, 2,  2, 2], **kwargs)
 def xresnet1d34 (**kwargs): return _xresnet1d(1, [3, 4,  6, 3], **kwargs)
@@ -195,3 +244,4 @@ def xresnet1d50_deeper(**kwargs): return _xresnet1d(4, [3,4,6,3,1,1,1,1], **kwar
 def xbotnet1d50 (**kwargs): return _xresnet1d(4, [3, 4,  6, 3], mhsa=True, **kwargs)
 def xbotnet1d101(**kwargs): return _xresnet1d(4, [3, 4, 23, 3], mhsa=True, **kwargs)
 def xbotnet1d152(**kwargs): return _xresnet1d(4, [3, 8, 36, 3], mhsa=True, **kwargs)
+

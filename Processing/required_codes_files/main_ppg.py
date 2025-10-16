@@ -20,7 +20,7 @@ import subprocess
 from lightning.pytorch.tuner import Tuner
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor, TQDMProgressBar
-from clinical_ts.xresnet1d import xresnet1d50,xresnet1d101
+from clinical_ts.xresnet1d import xresnet1d50,xresnet1d101, xresnet1d50_MCD
 from clinical_ts.inception1d import inception1d
 
 from clinical_ts.s4_model import S4Model
@@ -37,9 +37,11 @@ from clinical_ts.lenet1d import lenet1d
 
 from sklearn.metrics import f1_score
 from sklearn.metrics import roc_auc_score
+import pickle
 
 from pathlib import Path
 import numpy as np
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 #mlflow without autologging https://github.com/zjohn77/lightning-mlflow-hf/blob/74c30c784f719ea166941751bda24393946530b7/lightning_mlflow/train.py#L39
 MLFLOW_AVAILABLE=True
@@ -78,6 +80,8 @@ class ConstantBaseline(nn.Module):
         return torch.unsqueeze(self.params,dim=0).expand(x.shape[0],self.params.shape[0])
     
 ############################################################################################################
+
+        
 class Main_PPG(lp.LightningModule):
 
     def __init__(self, hparams):
@@ -98,6 +102,8 @@ class Main_PPG(lp.LightningModule):
 
         if(hparams.architecture=="xresnet1d50"):
             self.model = xresnet1d50(input_channels=hparams.input_channels, num_classes=num_classes)
+        elif(hparams.architecture=="xresnet1d50_MCD"):
+            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes)
         elif(hparams.architecture=="xresnet1d101"):
             self.model = xresnet1d101(input_channels=hparams.input_channels, num_classes=num_classes)
         elif(hparams.architecture=="inception1d"):
@@ -362,7 +368,6 @@ class Main_PPG(lp.LightningModule):
         if(self.hparams.finetune_dataset=="mimiciiibp"):
             loss = self.criterion(preds_all.view(-1),data_batch[1].view(-1))#flatten everything (and convert bp integers to float)
         else:
-        else:
             loss = self.criterion(preds_all,data_batch[1])
 
         self.log("train_loss" if train else ("test_loss" if test else "val_loss"), loss)
@@ -451,7 +456,160 @@ class Main_PPG(lp.LightningModule):
             param.data = state_dict[name].data.to(param.device)
         for name, param in self.named_buffers():
             param.data = state_dict[name].data.to(param.device)
+            
+class Main_PPG_MCD(Main_PPG):
+    def __init__(self, hparams):
+        super().__init__(hparams)
+        self.save_hyperparameters(hparams)
+        #nn.Module.__init__(self)
+        self.lr = self.hparams.lr
 
+        print(hparams)
+        if(hparams.finetune_dataset == "mimiciiibp" or hparams.finetune_dataset.startswith("bpbenchmark") or hparams.finetune_dataset.startswith("pulsedb")):
+            if hparams.gnll:
+                num_classes = 4
+                self.criterion =nn.GaussianNLLLoss(eps=1e-6)
+            else:
+                num_classes = 2
+                self.criterion = F.mse_loss
+            self.task = "regression"
+        elif(hparams.finetune_dataset == "deepbeat"):
+            num_classes = 2
+            self.task = "classification"
+            self.criterion = F.cross_entropy
+
+        # also works in the segmentation case
+        #self.criterion = F.cross_entropy if self.task == "classification" else nn.GaussianNLLLoss(eps=1e-6)# F.mse_loss
+
+        if(hparams.architecture=="xresnet1d50_MCD"):
+            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes, act_head="relu", ps_head=0.1)
+        elif(hparams.architecture=="xresnet1d101"):
+            self.model = xresnet1d101(input_channels=hparams.input_channels, num_classes=num_classes)
+        elif(hparams.architecture=="inception1d"):
+            self.model = inception1d(input_channels=hparams.input_channels, num_classes=num_classes)
+        elif(hparams.architecture=="s4"):
+            self.model = S4Model(d_input=hparams.input_channels, d_output=num_classes, l_max=self.hparams.input_size, d_state=self.hparams.s4_n, d_model=self.hparams.s4_h, n_layers = self.hparams.s4_layers,bidirectional=True)#,backbone="s4new")
+        elif(hparams.architecture=="baseline"):
+            self.model = ConstantBaseline(num_classes=num_classes)
+        elif(hparams.architecture=="lenet1d"):
+            self.model = lenet1d(input_channels=hparams.input_channels, num_classes=num_classes)          
+        else:
+            assert(False)
+        self.test_vars = None
+            
+    def _step(self, data_batch, batch_idx, train, test=False, dataloader_idx=0):
+        preds_all = self.forward(data_batch[0])  # [batch_size, 4] if gnll=True, [batch_size, 2] if gnll=False
+        if self.task == "regression":
+            if self.hparams.gnll:
+                # Split outputs: mu1, sigma1_sq, mu2, sigma2_sq
+                mu1, sigma1_sq, mu2, sigma2_sq = preds_all[:, 0], preds_all[:, 1], preds_all[:, 2], preds_all[:, 3]
+                y1, y2 = data_batch[1][:, 0], data_batch[1][:, 1]  # Systolic, diastolic BP
+                # Compute GNLL for each variable and sum
+                loss1 = self.criterion(mu1, y1, sigma1_sq)
+                loss2 = self.criterion(mu2, y2, sigma2_sq)
+                loss = loss1 + loss2
+            else:
+                # Use MSE loss directly on predictions and targets
+                loss = self.criterion(preds_all, data_batch[1])  # preds_all: [batch_size, 2], data_batch[1]: [batch_size, 2]
+        else:
+            # Classification case remains unchanged
+            loss = self.criterion(preds_all, data_batch[1])  # Cross-entropy for classification
+    
+        self.log("train_loss" if train else ("test_loss" if test else "val_loss"), loss)
+    
+        if not train and not test:
+            self.val_preds[dataloader_idx].append(preds_all.detach())
+            self.val_targs[dataloader_idx].append(data_batch[1])
+        elif not train and test:
+            self.test_preds[dataloader_idx].append(preds_all.detach())
+            self.test_targs[dataloader_idx].append(data_batch[1])
+    
+        return loss
+
+    
+
+    #def test_step(self, test_batch, batch_idx, dataloader_idx=0):
+    #    return self._step(test_batch,batch_idx,train=False,test=True, dataloader_idx=dataloader_idx)
+    def eval_scores(self, targs, preds, classes=None):
+        if self.task == "regression":
+            if self.hparams.gnll:
+                # Extract mean predictions (mu1, mu2) for systolic and diastolic BP
+                preds_means = preds[:, [0, 2]]  # Select mu1 (index 0) and mu2 (index 2)
+            else:
+                preds_means = preds  # Use preds directly if gnll=False
+    
+            maes = np.abs((targs - preds_means))  # Compute MAE using mean predictions
+            mae = np.mean(maes, axis=0)
+            # IEEE 1708a-2019 grades (fraction of cases)
+            gradea = np.mean(maes <= 5.0, axis=0)
+            gradeb = np.mean(np.logical_and(maes > 5.0, maes <= 6.0), axis=0)
+            gradec = np.mean(np.logical_and(maes > 6.0, maes <= 7.0), axis=0)
+            graded = np.mean(maes > 7.0, axis=0)
+    
+            return {
+                "mae0": mae[0],
+                "mae1": mae[1],
+                "gradea0": gradea[0],
+                "gradea1": gradea[1],
+                "gradeb0": gradeb[0],
+                "gradeb1": gradeb[1],
+                "gradec0": gradec[0],
+                "gradec1": gradec[1],
+                "graded0": graded[0],
+                "graded1": graded[1],
+            }
+        else:
+            return {}
+
+    def test_step(self, test_batch, batch_idx, dataloader_idx=0):
+        if self.test_vars is None:
+            self.test_vars = [[] for _ in range(len(self.test_datasets))]
+        self.model.eval()  # Enable dropout during testing for MCD
+        # Enable dropout layers specifically
+        dropout_layers = []
+        for module in self.model.modules():
+            if isinstance(module, nn.Dropout):
+                dropout_layers.append(module)
+                module.train()  # Enable dropout for this layer
+
+        x, y = test_batch
+        num_samples = 11
+
+        # Perform X forward passes with dropout enabled
+        preds_list = []
+        for _ in range(num_samples):
+            preds = self.forward(x)  # [batch_size, 4] or [batch_size, 2]
+            preds_list.append(preds)
+
+        # Compute mean predictions across X samples
+        preds_all = torch.stack(preds_list).mean(dim=0)  # [batch_size, num_classes]
+        var_all = torch.stack(preds_list).std(dim=0)  # [batch_size, num_classes]
+
+        # Compute loss using mean predictions
+        if self.task == "regression" and self.hparams.gnll:
+            mu1, sigma1_sq, mu2, sigma2_sq = preds_all[:, 0], preds_all[:, 1], preds_all[:, 2], preds_all[:, 3]
+            y1, y2 = y[:, 0], y[:, 1]
+            loss1 = self.criterion(mu1, y1, sigma1_sq)
+            loss2 = self.criterion(mu2, y2, sigma2_sq)
+            loss = loss1 + loss2
+        else:
+            loss = self.criterion(preds_all, y)
+
+        self.log("test_loss", loss)
+        self.test_preds[dataloader_idx].append(preds_all.detach())
+        self.test_targs[dataloader_idx].append(y)
+        self.test_vars[dataloader_idx].append(var_all.detach())
+
+        return loss
+
+    def on_test_epoch_end(self):
+        with open('variances_test.pkl', 'wb') as f:  # Changed 'rb' to 'wb' for writing
+            pickle.dump(self.test_vars, f)
+        for i in range(len(self.test_preds)):
+            self.on_valtest_epoch_eval({"preds":self.test_preds[i], "targs":self.test_targs[i]}, dataloader_idx=i, test=True)
+            self.test_preds[i].clear()
+            self.test_targs[i].clear()
+        
 ######################################################################################################
 # MISC
 ######################################################################################################
@@ -493,6 +651,7 @@ def add_application_specific_args(parser):
     parser.add_argument("--stride-fraction-train", type=float, default=1.,help="training stride in multiples of input size")
     parser.add_argument("--stride-fraction-valtest", type=float, default=1.,help="val/test stride in multiples of input size")
     parser.add_argument("--chunkify-train", action='store_true')
+    parser.add_argument("--gnll", action='store_true')
 
     parser.add_argument("--eval-only", type=str, help="path to model checkpoint for evaluation", default="")
 
@@ -512,13 +671,13 @@ if __name__ == '__main__':
     parser = add_application_specific_args(parser)
 
     hparams = parser.parse_args()
-    hparams.executable = "main_ppg"
+    hparams.executable = "main_ppg_mcd"
     hparams.revision = get_git_revision_short_hash()
 
     if not os.path.exists(hparams.output_path):
         os.makedirs(hparams.output_path)
         
-    model = Main_PPG(hparams)
+    model = Main_PPG_MCD(hparams)
 
     logger = [TensorBoardLogger(
         save_dir=hparams.output_path,
