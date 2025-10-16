@@ -603,8 +603,12 @@ class Main_PPG_MCD(Main_PPG):
         return loss
 
     def on_test_epoch_end(self):
-        with open('variances_test.pkl', 'wb') as f:  # Changed 'rb' to 'wb' for writing
-            pickle.dump(self.test_vars, f)
+        cpu_test_vars = [[var.cpu() for var in vars_sublist] for vars_sublist in self.test_vars]
+        # Save the CPU-based tensors to the pickle file
+        with open('variances_test.pkl', 'wb') as f:
+            pickle.dump(cpu_test_vars, f)
+        #with open('variances_test.pkl', 'wb') as f: 
+        #    pickle.dump(self.test_vars, f)
         for i in range(len(self.test_preds)):
             self.on_valtest_epoch_eval({"preds":self.test_preds[i], "targs":self.test_targs[i]}, dataloader_idx=i, test=True)
             self.test_preds[i].clear()
