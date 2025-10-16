@@ -495,7 +495,12 @@ class Main_PPG_MCD(Main_PPG):
             self.model = lenet1d(input_channels=hparams.input_channels, num_classes=num_classes)          
         else:
             assert(False)
-        self.test_vars = None
+        self.test_epi_sbp = None
+        self.test_epi_dbp = None
+        self.test_ale_sbp = None
+        self.test_ale_dbp = None
+        self.test_preds_cpu = None
+        self.test_targs_cpu = None
             
     def _step(self, data_batch, batch_idx, train, test=False, dataloader_idx=0):
         preds_all = self.forward(data_batch[0])  # [batch_size, 4] if gnll=True, [batch_size, 2] if gnll=False
@@ -562,8 +567,23 @@ class Main_PPG_MCD(Main_PPG):
             return {}
 
     def test_step(self, test_batch, batch_idx, dataloader_idx=0):
-        if self.test_vars is None:
-            self.test_vars = [[] for _ in range(len(self.test_datasets))]
+        
+        if self.test_epi_sbp is None:
+            self.test_epi_sbp = [[] for _ in range(len(self.test_datasets))]
+        if self.test_epi_dbp is None:
+            self.test_epi_dbp = [[] for _ in range(len(self.test_datasets))]
+            
+        if self.test_ale_sbp is None:
+            self.test_ale_sbp = [[] for _ in range(len(self.test_datasets))]
+        if self.test_ale_dbp is None:
+            self.test_ale_dbp = [[] for _ in range(len(self.test_datasets))]
+            
+        if self.test_targs_cpu is None:
+            self.test_targs_cpu = [[] for _ in range(len(self.test_datasets))]
+        if self.test_preds_cpu is None:
+            self.test_preds_cpu = [[] for _ in range(len(self.test_datasets))]
+
+        
         self.model.eval()  # Enable dropout during testing for MCD
         # Enable dropout layers specifically
         dropout_layers = []
@@ -583,7 +603,7 @@ class Main_PPG_MCD(Main_PPG):
 
         # Compute mean predictions across X samples
         preds_all = torch.stack(preds_list).mean(dim=0)  # [batch_size, num_classes]
-        var_all = torch.stack(preds_list).std(dim=0)  # [batch_size, num_classes]
+        var_all = torch.stack(preds_list).var(dim=0)  # [batch_size, num_classes]
 
         # Compute loss using mean predictions
         if self.task == "regression" and self.hparams.gnll:
@@ -592,21 +612,52 @@ class Main_PPG_MCD(Main_PPG):
             loss1 = self.criterion(mu1, y1, sigma1_sq)
             loss2 = self.criterion(mu2, y2, sigma2_sq)
             loss = loss1 + loss2
+            aleatoric_dbp = sigma1_sq
+            aleatoric_sbp = sigma2_sq
+            epi_dbp = var_all[:,0]
+            epi_sbp = var_all[:,2]
+            self.test_ale_sbp[dataloader_idx].append(ale_sbp.detach().cpu())
+            self.test_ale_dbp[dataloader_idx].append(ale_dbp.detach().cpu())
         else:
             loss = self.criterion(preds_all, y)
+            epi_dbp = var_all[:,0]
+            epi_sbp = var_all[:,1]
 
         self.log("test_loss", loss)
+        
         self.test_preds[dataloader_idx].append(preds_all.detach())
         self.test_targs[dataloader_idx].append(y)
-        self.test_vars[dataloader_idx].append(var_all.detach())
+        #self.test_vars[dataloader_idx].append(var_all.detach().cpu())
+
+        self.test_epi_sbp[dataloader_idx].append(epi_sbp.detach().cpu())
+        self.test_epi_dbp[dataloader_idx].append(epi_dbp.detach().cpu())
+        
+        
+        self.test_preds_cpu[dataloader_idx].append(preds_all.detach().cpu())
+        self.test_targs_cpu[dataloader_idx].append(y.detach().cpu())
+        
 
         return loss
 
     def on_test_epoch_end(self):
-        cpu_test_vars = [[var.cpu() for var in vars_sublist] for vars_sublist in self.test_vars]
+        #cpu_test_vars = [[var.cpu() for var in vars_sublist] for vars_sublist in self.test_vars]
         # Save the CPU-based tensors to the pickle file
-        with open('variances_test.pkl', 'wb') as f:
-            pickle.dump(cpu_test_vars, f)
+        if self.hparams.gnll:
+            with open('test_ale_sbp.pkl', 'wb') as f:
+                pickle.dump(self.test_ale_sbp, f)
+            with open('test_ale_dbp.pkl', 'wb') as f:
+                pickle.dump(self.test_ale_dbp, f)
+        
+        with open('test_epi_sbp.pkl', 'wb') as f:
+            pickle.dump(self.test_epi_sbp, f)
+        with open('test_epi_dbp.pkl', 'wb') as f:
+            pickle.dump(self.test_epi_dbp, f)
+        
+            
+        with open('test_preds_cpu.pkl', 'wb') as f:
+            pickle.dump(self.test_preds_cpu, f)
+        with open('test_targs_cpu.pkl', 'wb') as f:
+            pickle.dump(self.test_targs_cpu, f)
         #with open('variances_test.pkl', 'wb') as f: 
         #    pickle.dump(self.test_vars, f)
         for i in range(len(self.test_preds)):
