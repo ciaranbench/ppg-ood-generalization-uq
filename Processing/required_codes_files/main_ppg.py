@@ -612,16 +612,16 @@ class Main_PPG_MCD(Main_PPG):
             loss1 = self.criterion(mu1, y1, sigma1_sq)
             loss2 = self.criterion(mu2, y2, sigma2_sq)
             loss = loss1 + loss2
-            aleatoric_dbp = sigma1_sq
-            aleatoric_sbp = sigma2_sq
-            epi_dbp = var_all[:,0]
-            epi_sbp = var_all[:,2]
-            self.test_ale_sbp[dataloader_idx].append(ale_sbp.detach().cpu())
-            self.test_ale_dbp[dataloader_idx].append(ale_dbp.detach().cpu())
+            aleatoric_sbp = sigma1_sq
+            aleatoric_dbp = sigma2_sq
+            epi_sbp = var_all[:,0]
+            epi_dbp = var_all[:,2]
+            self.test_ale_sbp[dataloader_idx].append(aleatoric_sbp.detach().cpu())
+            self.test_ale_dbp[dataloader_idx].append(aleatoric_dbp.detach().cpu())
         else:
             loss = self.criterion(preds_all, y)
-            epi_dbp = var_all[:,0]
-            epi_sbp = var_all[:,1]
+            epi_sbp = var_all[:,0]
+            epi_dbp = var_all[:,1]
 
         self.log("test_loss", loss)
         
