@@ -103,7 +103,8 @@ class Main_PPG(lp.LightningModule):
         if(hparams.architecture=="xresnet1d50"):
             self.model = xresnet1d50(input_channels=hparams.input_channels, num_classes=num_classes)
         elif(hparams.architecture=="xresnet1d50_MCD"):
-            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes)
+            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes, dropout_prob = hparams.dr)
+            print(self.model)
         elif(hparams.architecture=="xresnet1d101"):
             self.model = xresnet1d101(input_channels=hparams.input_channels, num_classes=num_classes)
         elif(hparams.architecture=="inception1d"):
@@ -482,7 +483,8 @@ class Main_PPG_MCD(Main_PPG):
         #self.criterion = F.cross_entropy if self.task == "classification" else nn.GaussianNLLLoss(eps=1e-6)# F.mse_loss
 
         if(hparams.architecture=="xresnet1d50_MCD"):
-            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes, act_head="relu", ps_head=0.1)
+            self.model = xresnet1d50_MCD(input_channels=hparams.input_channels, num_classes=num_classes, act_head="relu", ps_head=0.1, dropout_prob = hparams.dr)
+            print(self.model)
         elif(hparams.architecture=="xresnet1d101"):
             self.model = xresnet1d101(input_channels=hparams.input_channels, num_classes=num_classes)
         elif(hparams.architecture=="inception1d"):
@@ -593,7 +595,7 @@ class Main_PPG_MCD(Main_PPG):
                 module.train()  # Enable dropout for this layer
 
         x, y = test_batch
-        num_samples = 11
+        num_samples = 50
 
         # Perform X forward passes with dropout enabled
         preds_list = []
@@ -714,6 +716,7 @@ def add_application_specific_args(parser):
     parser.add_argument("--disregard-splits", action='store_true',help="disregard dataset splits (to be used in conjunction with eval-only) for evaluation on entire datasets")
     parser.add_argument("--join-calib-val", action='store_true',help="join calibration and validation set")
     parser.add_argument("--debug", action='store_true', help="Enable debugging mode")
+    parser.add_argument("--dr", type=float, default=0.05, help="Dropout rate for MCD")
     
     return parser
             
