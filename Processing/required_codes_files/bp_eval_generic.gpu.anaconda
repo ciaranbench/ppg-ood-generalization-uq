@@ -63,7 +63,7 @@ source activate /home/cb25/hpc-work/anaconda3/envs/lp7
 application="python"
 
 #! Run options for the application:
-options="main_ppg.py --data /home/cb25/hpc-work/reg_wp1/wp1-raw-time-series/pulsedb_data --input-size 1250 --architecture xresnet1d50_MCD --finetune-dataset pulsedb_calib --refresh-rate 1 --eval-only ./version_0/best_model.ckpt --gnll --dr .05"
+options="main_ppg.py --data /home/cb25/hpc-work/reg_wp1/wp1-raw-time-series/pulsedb_data --input-size 1250 --architecture xresnet1d50_MCD --finetune-dataset pulsedb_calib --refresh-rate 1 --eval-only ./version_2/best_model.ckpt --dr .2 --gnll"
 
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the
