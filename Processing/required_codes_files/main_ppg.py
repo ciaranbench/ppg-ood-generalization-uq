@@ -399,7 +399,11 @@ class Main_PPG(lp.LightningModule):
         return [DataLoader(ds, batch_size=self.hparams.batch_size, num_workers=8) for ds in self.val_datasets]
     
     def test_dataloader(self):
-        return [DataLoader(ds, batch_size=self.hparams.batch_size, num_workers=8) for ds in self.test_datasets]
+        if self.hparams.eval_on_train:
+            dl = DataLoader(self.train_dataset, batch_size=self.hparams.batch_size, num_workers=8, shuffle=False, drop_last = True)
+        else:
+            dl = [DataLoader(ds, batch_size=self.hparams.batch_size, num_workers=8) for ds in self.test_datasets]
+        return dl
         
     def _step(self,data_batch, batch_idx, train, test=False, dataloader_idx=0):
         #if(torch.sum(torch.isnan(data_batch[0])).item()>0):#debugging
@@ -696,25 +700,29 @@ class Main_PPG_MCD(Main_PPG):
     def on_test_epoch_end(self):
         #cpu_test_vars = [[var.cpu() for var in vars_sublist] for vars_sublist in self.test_vars]
         # Save the CPU-based tensors to the pickle file
-        if self.hparams.gnll:
-            with open('test_ale_sbp.pkl', 'wb') as f:
-                pickle.dump(self.test_ale_sbp, f)
-            with open('test_ale_dbp.pkl', 'wb') as f:
-                pickle.dump(self.test_ale_dbp, f)
         
-        with open('test_epi_sbp.pkl', 'wb') as f:
-            pickle.dump(self.test_epi_sbp, f)
-        with open('test_epi_dbp.pkl', 'wb') as f:
-            pickle.dump(self.test_epi_dbp, f)
         
+        if self.hparams.eval_on_train:
+            with open('train_latents.pkl', 'wb') as f:
+                pickle.dump(self.test_latents, f)
+        else:
+            with open('test_latents.pkl', 'wb') as f:
+                pickle.dump(self.test_latents, f)
+            with open('test_preds_cpu.pkl', 'wb') as f:
+                pickle.dump(self.test_preds_cpu, f)
             
-        with open('test_preds_cpu.pkl', 'wb') as f:
-            pickle.dump(self.test_preds_cpu, f)
-        with open('test_targs_cpu.pkl', 'wb') as f:
-            pickle.dump(self.test_targs_cpu, f)
-
-        with open('test_latents.pkl', 'wb') as f:
-            pickle.dump(self.test_latents, f)
+            with open('test_targs_cpu.pkl', 'wb') as f:
+                pickle.dump(self.test_targs_cpu, f)
+            if self.hparams.gnll:
+                with open('test_ale_sbp.pkl', 'wb') as f:
+                    pickle.dump(self.test_ale_sbp, f)
+                with open('test_ale_dbp.pkl', 'wb') as f:
+                    pickle.dump(self.test_ale_dbp, f)
+        
+            with open('test_epi_sbp.pkl', 'wb') as f:
+                pickle.dump(self.test_epi_sbp, f)
+            with open('test_epi_dbp.pkl', 'wb') as f:
+                pickle.dump(self.test_epi_dbp, f)
         #with open('variances_test.pkl', 'wb') as f: 
         #    pickle.dump(self.test_vars, f)
         for i in range(len(self.test_preds)):
@@ -766,6 +774,7 @@ def add_application_specific_args(parser):
     parser.add_argument("--gnll", action='store_true')
 
     parser.add_argument("--eval-only", type=str, help="path to model checkpoint for evaluation", default="")
+    parser.add_argument("--eval-on-train", action='store_true', help="evaluates testing procedure on train set")
 
     parser.add_argument('--select-input-channel', action='append', type=int, help='Select specific input channels (use multiple times for multiple channels)- by default all channels will be used')
     parser.add_argument("--disregard-splits", action='store_true',help="disregard dataset splits (to be used in conjunction with eval-only) for evaluation on entire datasets")
