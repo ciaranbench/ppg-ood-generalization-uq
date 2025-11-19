@@ -41,7 +41,7 @@ import pickle
 
 from pathlib import Path
 import numpy as np
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 #mlflow without autologging https://github.com/zjohn77/lightning-mlflow-hf/blob/74c30c784f719ea166941751bda24393946530b7/lightning_mlflow/train.py#L39
 MLFLOW_AVAILABLE=True
@@ -81,6 +81,45 @@ class ConstantBaseline(nn.Module):
     
 ############################################################################################################
 
+
+class PenultimateHook:
+    def __init__(self, model):
+        self.activations = None
+        self.handle = None
+        self._register_hook(model)
+
+    def _hook_fn(self, module, input, output):
+        self.activations = output.detach().cpu()
+
+    def _register_hook(self, model):
+        head = model[-1]
+        target_layer = None
+
+        # Priority: find Flatten → BatchNorm1d → last ReLU/Dropout
+        for layer in head:
+            if isinstance(layer, nn.Flatten):
+                target_layer = layer
+                break
+        if target_layer is None:
+            for layer in reversed(head):
+                if isinstance(layer, (nn.BatchNorm1d, nn.ReLU, nn.Dropout)):
+                    target_layer = layer
+                    break
+
+        if target_layer is None:
+            raise RuntimeError("Could not find penultimate feature layer")
+
+        self.handle = target_layer.register_forward_hook(self._hook_fn)
+
+    def remove(self):
+        if self.handle is not None:
+            self.handle.remove()
+            self.handle = None
+
+    def clear(self):
+        self.activations = None
+
+
         
 class Main_PPG(lp.LightningModule):
 
@@ -117,6 +156,7 @@ class Main_PPG(lp.LightningModule):
             self.model = lenet1d(input_channels=hparams.input_channels, num_classes=num_classes)          
         else:
             assert(False)
+        
 
     def forward(self, x, **kwargs):
         if(len(x.shape)==2):#no separate channel axis
@@ -503,6 +543,9 @@ class Main_PPG_MCD(Main_PPG):
         self.test_ale_dbp = None
         self.test_preds_cpu = None
         self.test_targs_cpu = None
+        self.latents = None
+        self.test_latents = None
+        self.hook = PenultimateHook(self.model)
             
     def _step(self, data_batch, batch_idx, train, test=False, dataloader_idx=0):
         preds_all = self.forward(data_batch[0])  # [batch_size, 4] if gnll=True, [batch_size, 2] if gnll=False
@@ -584,6 +627,9 @@ class Main_PPG_MCD(Main_PPG):
             self.test_targs_cpu = [[] for _ in range(len(self.test_datasets))]
         if self.test_preds_cpu is None:
             self.test_preds_cpu = [[] for _ in range(len(self.test_datasets))]
+            
+        if self.test_latents is None:
+            self.test_latents = [[] for _ in range(len(self.test_datasets))]
 
         
         self.model.eval()  # Enable dropout during testing for MCD
@@ -599,13 +645,18 @@ class Main_PPG_MCD(Main_PPG):
 
         # Perform X forward passes with dropout enabled
         preds_list = []
+        latents_list = []
         for _ in range(num_samples):
             preds = self.forward(x)  # [batch_size, 4] or [batch_size, 2]
             preds_list.append(preds)
+        penultimate_feats = self.hook.activations
+        latents_list.append(penultimate_feats)
 
         # Compute mean predictions across X samples
         preds_all = torch.stack(preds_list).mean(dim=0)  # [batch_size, num_classes]
         var_all = torch.stack(preds_list).var(dim=0)  # [batch_size, num_classes]
+        latents_all = latents_list#torch.stack(penultimate_feats)
+        
 
         # Compute loss using mean predictions
         if self.task == "regression" and self.hparams.gnll:
@@ -637,7 +688,8 @@ class Main_PPG_MCD(Main_PPG):
         
         self.test_preds_cpu[dataloader_idx].append(preds_all.detach().cpu())
         self.test_targs_cpu[dataloader_idx].append(y.detach().cpu())
-        
+
+        self.test_latents[dataloader_idx].append(latents_all)
 
         return loss
 
@@ -660,6 +712,9 @@ class Main_PPG_MCD(Main_PPG):
             pickle.dump(self.test_preds_cpu, f)
         with open('test_targs_cpu.pkl', 'wb') as f:
             pickle.dump(self.test_targs_cpu, f)
+
+        with open('test_latents.pkl', 'wb') as f:
+            pickle.dump(self.test_latents, f)
         #with open('variances_test.pkl', 'wb') as f: 
         #    pickle.dump(self.test_vars, f)
         for i in range(len(self.test_preds)):

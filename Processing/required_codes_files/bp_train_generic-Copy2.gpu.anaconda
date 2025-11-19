@@ -1,8 +1,16 @@
 #!/bin/bash
 #!
-#! Example SLURM job script for Minerva (Skylake CPUs, OPA)
-#! Last updated: Sun 22 Apr 18:41:50 BST 2018
-#! Generic example.
+#! Example SLURM job script for Minerva (CPUs)
+#! Last updated: Sun 04 August 18:41:50 BST 2025
+#! Example for MATLAB.
+
+#!############################################################
+#!#### Minerva, HPC Cluster Resources                    #####
+#!############################################################
+
+# Account (-A) NPL-GENERL-GPU; partition (-p) gpu-amp; nodes (-w/--nodelist) gpu-b-[1-2]
+# Account (-A) NPL-GENERL-CPU; partition (-p) icelake; nodes (-w/--nodelist) cpu-b-[1-4]
+# Account (-A) NPL-GENERL-CPU; partition (-p) icelake-himem; nodes (-w/--nodelist) cpu-b-[4-8]
 
 #!#############################################################
 #!#### Modify the options in this section as appropriate ######
@@ -10,33 +18,29 @@
 
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J nils_deepbeat
+#SBATCH -J lb20tst 
 #! Which project should be charged:
 #SBATCH -A NPL-GENERAL-GPU
-#! Which pool should be used
+#! Which partition should be used:
 #SBATCH -p gpu-amp
-
-#! How many whole nodes should be allocated?
+#! How many whole nodes should be allocated? For MATLAB choose --nodes=1.
 #SBATCH --nodes=1
-#! How many (MPI) tasks will there be in total? (<= nodes*32)
-#! The skylake nodes have 32 CPUs (cores) each.
+#! How many tasks will there be in total? For MATLAB choose --ntasks=1.
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4  # Increase to increase cpus and memory.
 #! How much wallclock time will be required?
-#SBATCH --time=31:00:00
+#SBATCH --time=00:20:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=FAIL
 #! Uncomment this to prevent the job from being requeued (e.g. if
 #! interrupted by node failure or system downtime):
 ##SBATCH --no-requeue
+##SBATCH --mem
+#SBATCH --nodelist=gpu-b-2
+#SBATCH --gres=gpu:1  #Request 1 GPU
+#export CUDA_VISIBLE_DEVICES=2 # GPU number
 
 #! sbatch directives end here (put any additional directives above this line)
-
-#! Notes:
-#! Charging is determined by core number*walltime.
-#! The --ntasks value refers to the number of tasks to be launched by SLURM only.
-#! Each task is allocated 1 core by default, and each core is allocated 5990MB.
-#! If this is insufficient, also specify
-#! --cpus-per-task and/or --mem (the latter specifies MB per node).
 
 #! Number of nodes and tasks per node allocated by SLURM (do not change):
 numnodes=$SLURM_JOB_NUM_NODES
@@ -53,17 +57,30 @@ np=$[${numnodes}*${mpi_tasks_per_node}]
 #! irrespective of ~/.bashrc):
 . /etc/profile.d/modules.sh           # Leave this line (enables the module command)
 module purge                          # Removes all modules still loaded
-module load centos7/default-basic       # REQUIRED - loads the basic environment
-#! Insert additional module load commands after this line if needed:
-source activate /home/cb25/hpc-work/ppg_ood/bin/activate
-#! Insert further setup command lines to be executed before running the main application
+module load rhel9/default-basic       # REQUIRED - loads the basic environment
 
+module load python
+source activate /home/cb25/hpc-work/ppg_ood/bin/activate
 
 #! Full path to application executable: 
 application="python"
 
 #! Run options for the application:
 options="main_ppg.py --data /home/cb25/hpc-work/old_min/reg_wp1/wp1-raw-time-series/pulsedb_data --input-size 1250 --architecture xresnet1d50_MCD --finetune-dataset pulsedb_calib --refresh-rate 1 --dr 0.20 --gnll"
+
+
+#! Specify root filename (without.mph) and tag of the Study to run in the COMSOL Multiphysics model
+#filename="test_parametric_nested"
+#study="std1"
+
+#inputfile="${filename}.mph"
+#outputfile="${filename}_out.mph"
+
+#options="-mpibootstrap slurm -inputfile $inputfile -outputfile $outputfile -study $study -usebatchlic"
+# -usebatchlic flag to use only one floating licence across the whole Minerva cluster.
+
+###############################################################
+
 
 #! Work directory (i.e. where the job will run):
 workdir="$SLURM_SUBMIT_DIR"  # The value of SLURM_SUBMIT_DIR sets workdir to the
@@ -110,3 +127,4 @@ echo -e "\nnumtasks=$numtasks, numnodes=$numnodes, mpi_tasks_per_node=$mpi_tasks
 echo -e "\nExecuting command:\n==================\n$CMD\n"
 
 eval $CMD 
+
