@@ -97,14 +97,15 @@ class PenultimateHook:
 
         # Priority: find Flatten → BatchNorm1d → last ReLU/Dropout
         for layer in head:
-            if isinstance(layer, nn.Flatten):
+            if layer.__class__.__name__ == 'Flatten':
                 target_layer = layer
                 break
-        if target_layer is None:
-            for layer in reversed(head):
-                if isinstance(layer, (nn.BatchNorm1d, nn.ReLU, nn.Dropout)):
-                    target_layer = layer
-                    break
+        
+        #if target_layer is None:
+        #    for layer in reversed(head):
+        #        if isinstance(layer, (nn.BatchNorm1d)):#, nn.ReLU, nn.Dropout
+        #            target_layer = layer
+        #            break
 
         if target_layer is None:
             raise RuntimeError("Could not find penultimate feature layer")
@@ -723,12 +724,12 @@ class Main_PPG_MCD(Main_PPG):
                 pickle.dump(self.test_epi_sbp, f)
             with open('test_epi_dbp.pkl', 'wb') as f:
                 pickle.dump(self.test_epi_dbp, f)
-        #with open('variances_test.pkl', 'wb') as f: 
-        #    pickle.dump(self.test_vars, f)
-        for i in range(len(self.test_preds)):
-            self.on_valtest_epoch_eval({"preds":self.test_preds[i], "targs":self.test_targs[i]}, dataloader_idx=i, test=True)
-            self.test_preds[i].clear()
-            self.test_targs[i].clear()
+            #with open('variances_test.pkl', 'wb') as f: 
+            #    pickle.dump(self.test_vars, f)
+            for i in range(len(self.test_preds)):
+                self.on_valtest_epoch_eval({"preds":self.test_preds[i], "targs":self.test_targs[i]}, dataloader_idx=i, test=True)
+                self.test_preds[i].clear()
+                self.test_targs[i].clear()
         
 ######################################################################################################
 # MISC
