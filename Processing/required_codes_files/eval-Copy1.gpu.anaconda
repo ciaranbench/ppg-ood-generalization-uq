@@ -66,7 +66,7 @@ source activate /home/cb25/hpc-work/ppg_ood/bin/activate
 application="python"
 
 #! Run options for the application:
-options="main_ppg.py --data /home/cb25/hpc-work/old_min/reg_wp1/wp1-raw-time-series/pulsedb_data --input-size 1250 --architecture xresnet1d50_MCD --finetune-dataset pulsedb_calib --refresh-rate 1 --eval-only ./version_3/best_model.ckpt --dr .2 --gnll --eval-on-train"
+options="main_ppg.py --data /home/cb25/hpc-work/old_min/reg_wp1/wp1-raw-time-series/pulsedb_data --input-size 1250 --architecture xresnet1d50_MCD --finetune-dataset pulsedb_calib --refresh-rate 1 --eval-only ./version_3/best_model.ckpt --dr .2 --gnll "
 
 #! Specify root filename (without.mph) and tag of the Study to run in the COMSOL Multiphysics model
 #filename="test_parametric_nested"
